@@ -1,0 +1,21 @@
+{
+  "name" : "Unit-SI",
+  "source-url" : "",
+  "support" : {
+    "source" : null
+  },
+  "perl" : "6.c",
+  "license" : "GPL-3.0",
+  "test-depends" : [
+    "Test::META"
+  ],
+  "provides" : {
+    "Unit::SI" : "lib/Unit/SI.pm6"
+  },
+  "version" : "*",
+  "meta-version" : "0",
+  "authors" : [
+    ""
+  ],
+  "description" : "blah blah blah"
+}
