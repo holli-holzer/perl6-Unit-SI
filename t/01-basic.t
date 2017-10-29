@@ -17,91 +17,136 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 )
 use Test;
 use Unit::SI;
+
 use Unit::SI::Symbols;
 use Unit::SI::Operators;
 
-ok !(12V == 12A);
-exit;
-
 my $voltage = 12V;
 ok $voltage, "Yeah well, if this would fail, all hope were lost";
-ok $voltage == 12, "I mean, it's just an int with a role";;
 ok $voltage.si-name ~~ "volt", "Correct unit name";
 ok $voltage.si-symbol ~~ "V", "Correct unit symbol";
-ok "$voltage" ~~ "12V", "Voltage stringifies correctly";
+ok $voltage.gist ~~ "12e0V", "Voltage stringifies correctly";
 
 my $current = 0.5A;
-ok "$current" ~~ "0.5A", "Current stringifies correctly";
+ok $current.gist ~~ "5e-1A", "Current gistifies correctly";
+
+my $current2 = 0.05A;
+ok $current2.gist ~~ "5e-2A", "Current gistifies correctly";
+
+my $current3 = 12300000A;
+ok $current3.gist ~~ "12300000e0A", "Current gistifies correctly";
+
+ok $current.gist ~~ "5e-1A", "Current gistifies correctly!";
+#todo
+#my $current4 = 123000A;
+#ok $current4.gist ~~ "-1.23e5A", "Current gistifies correctly";
 
 subtest {
    lives-ok {
      my $resistance = $voltage.divide( $current );
-
-     ok $resistance == 24, "Impedance, correct result" ;
-     ok "$resistance" ~~ "24Ω", "Impedance stringifies correctly";
+     ok $resistance.gist ~~ "24e0Ω", "Impedance, correct result" ;
    }, "Divide Voltage by Current lives";
 }, "division by method";
 
 subtest {
    lives-ok {
      my $resistance = $voltage / $current;
-     ok $resistance == 24, "Impedance, correct result" ;
-     ok "$resistance" ~~ "24Ω", "Impedance stringifies correctly";
+     ok $resistance.gist ~~ "24e0Ω", "Impedance, correct result" ;
    }, "Divide Voltage by Current lives";
 }, "division by operator";
 
+
 subtest {
   my $power   = $voltage.multiply( $current );
-  ok $power == 6;
-  ok "$power" ~~ "6W", "Power stringifies correctly";
+  ok $power.gist ~~ "60e-1W", "Power stringifies correctly";
 }, "multiplication by method";
 
 subtest {
   my $power   = $voltage * $current;
-  ok $power == 6;
-  ok "$power" ~~ "6W", "Power stringifies correctly (again)";;
+  ok $power.gist ~~ "60e-1W", "Power stringifies correctly";
 }, "multiplication by operator";
 
 subtest
 {
-  throws-like { $voltage.add( $current ) }, Exception, message => /:s Unit mismatch/;
-  throws-like { $voltage + $current }, Exception, message => /:s Unit mismatch/;
+  throws-like { $voltage.add( $current ) }, Exception, message => /:s Unit mismatch/, "dies as expected";
+  throws-like { $voltage + $current }, Exception, message => /:s Unit mismatch/, "dies as expected";
 }, "addition fails for different units";
 
 subtest
 {
-  throws-like { $voltage.substract( $current ) }, Exception, message => /:s Unit mismatch/;
-  throws-like { $voltage - $current }, Exception, message => /:s Unit mismatch/;
+  throws-like { $voltage.substract( $current ) }, Exception, message => /:s Unit mismatch/, "dies as expected";
+  throws-like { $voltage - $current }, Exception, message => /:s Unit mismatch/, "dies as expected";
 }, "subtraction fails for different units";
 
-my $v1 = 12V;
-my $v2 = 24V;
+subtest {
+  ok 12V == 12V, "12V == 12V";
+  ok !(12V == 14V), "!(12V == 14V)";
+  throws-like { 12V == 12A }, Exception, message => /:s Unit mismatch/, "dies as expected";
+}, "equality";
+
+
+subtest {
+  ok !(12V != 12V), "!(12V != 12V)";
+  ok 12V != 14V, "12V != 14V";
+  throws-like { 12V != 15A }, Exception, message => /:s Unit mismatch/, "dies as expected";
+}, "inequality";
+
+subtest {
+  ok -12V < 10V, "-12V < 10V";
+  ok -12V == 12V * -1n, "multiply by -n";
+  ok (-12V).gist ~~ "-12e0V", "negative value gistifies correctly";
+}, "negativity";
+
+subtest {
+  ok 12V < 24V, "12V < 24V";
+  ok 24V > 12V, "24V > 12V";
+  ok !(12V > 24V), "!(12V > 24V)";
+  ok !(24V < 12V), "!(24V < 12V)";
+  throws-like { 12V < 15A }, Exception, message => /:s Unit mismatch/, "dies as expected";
+  throws-like { 12V > 15A }, Exception, message => /:s Unit mismatch/, "dies as expected";
+}, "smaller / bigger";
+
+subtest {
+  ok (2n * 12V).gist ~~ "24e0V", "multiplication by n";
+  throws-like { 12V + 2n }, Exception, message => /:s Unit mismatch/, "n doesnt add";
+}, "n";
+
+subtest {
+  my $speed    = 100㎧;
+  my $distance = -1000m;
+  my $time     = $distance / $speed;
+
+  ok $time.gist ~~ "-10e0s", "time gistifies correctly";
+  ok 1000m / -100㎧ == -10s, "time correct";
+}, "time and speed";
 
 subtest
 {
-  my $x = $v1.add($v2);
-  ok $x == 36;
-  ok $x.si-name ~~ "volt";
-  ok "$x" ~~ "36V";
-};
+  ok (1200V).Str(3) ~~ "1.2kiloV", "kiloVolt";
+  ok (1200V).Str(2) ~~ "12hectoV", "hectoVolt";
+  ok (1200V).Str(1) ~~ "120decaV", "decaVolt";
+  ok (1200V).Str(0) ~~ "1200V", "Volt";
+  ok (1200V).Str(-1) ~~ "12000deciV", "deciVolt";
+  ok (1200V).Str(-2) ~~ "120000centiV", "centiVolt";
+  ok (1200V).Str(-3) ~~ "1200000milliV", "milliVolt";
+}, "n>1 pretty-notation, > x > 1";
 
 subtest
 {
-  my $v3 = $v1 + $v2;
-  ok "$v3" ~~ "36V";
-  ok ($v1 + $v2).Str ~~ "36V";
-};
+  ok (0.0012V).Str(3) ~~ "0.0000012kiloV", "kiloVolt";
+  ok (0.0012V).Str(2) ~~ "0.000012hectoV", "hectoVolt";
+  ok (0.0012V).Str(1) ~~ "0.00012decaV", "decaVolt";
+  ok (0.0012V).Str(0) ~~ "0.0012V", "Volt";
+  ok (0.0012V).Str(-1) ~~ "0.012deciV", "deciVolt";
+  ok (0.0012V).Str(-2) ~~ "0.12centiV", "centiVolt";
+  ok (0.0012V).Str(-3) ~~ "1.2milliV", "milliVolt";
+}, "n>1 pretty-notation, 0 < x < 1";
 
-#ok 12V == 12V;
-
-
-#   my $x = 12V + 24V;
-#
-#   say "!!!", $x, ":$x", "-", $x.si-name;
-#
-#   #ok 12V + 24V == 36V, "V + V == V";
-#   #ok 12V + 24V != 36A, "V + V != A";
-# }, "bareness ahoi!";
-
+subtest
+{
+  ok (-0.0012V).Str(3) ~~ "-0.0000012kiloV", "kiloVolt";
+  ok (-0.0012V).Str(0) ~~ "-0.0012V", "Volt";
+  ok (-0.0012V).Str(-3) ~~ "-1.2milliV", "milliVolt";
+}, "n>1 pretty-notation,  x < 0";
 
 done-testing;
