@@ -23,33 +23,84 @@ role Unit::SI[$signature]
   }
 
   sub scientific-notation( $self ) {
-    my $symbol = $self.si-symbol;
+    my $symbol = $self.si-symbol || $self.scientific-signature;
     # ( 0 + $self ) to avoid calling $self.Str
     return ( 0.0 + $self ) ~ "e" ~ $self.si-signature[0] ~  $symbol;
   }
 
-  my @pdim = "", |<deca hecto kilo mega giga tera peta exa zetta yotta>;
-  my @ndim = "", |<deci centi milli micro nano pico femto atto zepto yocto>;
-
-  method pretty-notation( $size )
-  {
-    my $self     = (0.0 + self);
-    #say "!pretty-notation! $self";
-    my $exp      = self.si-signature[0];
-    my $exp-diff = $exp - $size;
-
-
-    my $value = $self * (10**$exp-diff);
-    #say "$self $exp $size $exp-diff -> $value ";
-    my $mod   =
-      $size > 0 ?? @pdim[$size] !!
-      $size < 0 ?? @ndim[abs($size)] !!
-      "";
-
-    return $value  ~ $mod ~ self.si-symbol;
+  method pretty-notation( $size is copy ) {
+    my $symbol = self.si-pretty-symbol($size) || self.pretty-signature($size);
+    return self.si-value( $size ) ~ " " ~ $symbol;
   }
 
+  method scientific-signature(Int $size = 0)
+  {
+    return "(" ~ self.pretty-signature($size) ~ ")";
+  }
+  
+  method pretty-signature(Int $size = 0)
+  {
+    my @u = <n m kg s A K mol cd>;
+    my $i = 0;
+    my @p;
+    my @n;
 
+    for 1 .. 7 {
+      if self.si-signature[$_] != 0 {
+        if self.si-signature[$_] > 0 {
+          if self.si-signature[$_] == 1 {
+            @p.push( @u[$_] );
+          }
+          else {
+            @p.push( @u[$_] ~ "**" ~ self.si-signature[$_] );
+          }
+        } else {
+          if self.si-signature[$_] == -1 {
+            @n.push( @u[$_] );
+          }
+          else {
+            @n.push( @u[$_] ~ "**" ~ abs(self.si-signature[$_]) );
+          }
+        }
+      }
+    }
+
+    return @p.join(" ") unless @n.elems;
+    return @n.join(" ") unless @p.elems;
+    return "{@p.join(" ")}/{@n.join(" ")}";
+}
+
+  method si-value( $size is copy ) {
+    # ( 0 + $self ) to avoid calling $self.Str
+    return (0.0 + self)
+      * exp-fact(self, $size)
+      * unit-idx-fact($size);
+  }
+
+  method si-pretty-symbol( $size is copy = 0 )
+  {
+    return self.symbol( 0, $size );
+  }
+
+  method si-symbol( $size is copy = 0 ) {
+    return self.symbol( 1, $size );
+  }
+
+  method symbol( $unit-idx, $size is copy = 0,  )
+  {
+    if my $unit = self!find-unit[0][$unit-idx]
+    {
+      state @pdim = "", |<deca hecto kilo mega giga tera peta exa zetta yotta>;
+      state @ndim = "", |<deci centi milli micro nano pico femto atto zepto yocto>;
+
+      my $mod   =
+        $size > 0 ?? @pdim[unit-idx($size)] !!
+        $size < 0 ?? @ndim[unit-idx($size)] !!
+        "";
+
+      return $mod ~ $unit;
+    }
+  }
 
   method !find-unit {
       @UNITS.first({ self.signature-matches( $_[1] ) });
@@ -59,7 +110,7 @@ role Unit::SI[$signature]
     return self!find-unit[0][0];
   }
 
-  method si-symbol {
+  method si-pretty-name {
     return self!find-unit[0][1];
   }
 
@@ -123,14 +174,8 @@ role Unit::SI[$signature]
     die "Unit mismatch in expression {self.gist} [{self.si-signature}] - {$value.gist} [{$value.si-signature}]"
         unless self.signature-matches( $value.si-signature );
 
-    # say "C1 ", self;
-    # say "C2 ", $value;
-
     my $s = self   * (10**self.si-signature[0]);
     my $v = $value * (10**$value.si-signature[0]);
-
-    # say "C1A ", $s;
-    # say "C2A ", $v;
 
     return $s < $v ?? -1 !!
            $s > $v ?? +1 !!
@@ -150,17 +195,7 @@ role Unit::SI[$signature]
   }
 
   method unit-divide( $signature ) {
-    # say "*1* ", "-", @$.si-signature;
-    # say "*2* ", @$signature;
-    # say "--1 ", 0 - 0;
-    # say "--2 ", (0+@$.si-signature[0]) - (0+@$signature[0]);
-    # say "--3 ", 0+@$.si-signature[0];
-    # say "--4",  @$signature[0].WHAT;
-    # say "--5 ", @$signature[0].perl;
-    # say "--5 ", @$signature[0].perl.WHAT;
-    my @r = @$.si-signature «-» @$signature;
-    #say "*3* ", @r;
-    return @r;
+    return @$.si-signature «-» @$signature;
   }
 
   method unit-multiply( $signature ) {
@@ -177,5 +212,20 @@ role Unit::SI[$signature]
 
   method signature-matches( $signature ) returns Bool {
     return @$.si-signature[1 .. *] ~~ @$signature[1 .. *];
+  }
+
+  sub unit-idx (Int $i) { return abs($i) if -3 < $i < 3;
+    return 2 + (abs($i) / 3).Int;
+  }
+
+  sub exp-fact( $value is copy, $size )
+  {
+    my $exp-diff = $value.si-signature[0] - $size;
+    return 10**$exp-diff;
+  }
+
+  sub unit-idx-fact(Int $i) {
+    return 1 if -3 < $i < 3;
+    return 10**($i % 3);
   }
 }

@@ -109,6 +109,7 @@ subtest {
 subtest {
   ok (2n * 12V).gist ~~ "24e0V", "multiplication by n";
   throws-like { 12V + 2n }, Exception, message => /:s Unit mismatch/, "n doesnt add";
+  pass;
 }, "n";
 
 subtest {
@@ -122,31 +123,63 @@ subtest {
 
 subtest
 {
-  ok (1200V).Str(3) ~~ "1.2kiloV", "kiloVolt";
-  ok (1200V).Str(2) ~~ "12hectoV", "hectoVolt";
-  ok (1200V).Str(1) ~~ "120decaV", "decaVolt";
-  ok (1200V).Str(0) ~~ "1200V", "Volt";
-  ok (1200V).Str(-1) ~~ "12000deciV", "deciVolt";
-  ok (1200V).Str(-2) ~~ "120000centiV", "centiVolt";
-  ok (1200V).Str(-3) ~~ "1200000milliV", "milliVolt";
+  ok (1200V).Str(3) ~~ "1.2 kilovolt", "kiloVolt";
+  ok (1200V).Str(2) ~~ "12 hectovolt", "hectoVolt";
+  ok (1200V).Str(1) ~~ "120 decavolt", "decaVolt";
+  ok (1200V).Str(0) ~~ "1200 volt", "Volt";
+  ok (1200V).Str(-1) ~~ "12000 decivolt", "deciVolt";
+  ok (1200V).Str(-2) ~~ "120000 centivolt", "centiVolt";
+  ok (1200V).Str(-3) ~~ "1200000 millivolt", "milliVolt";
 }, "n>1 pretty-notation, > x > 1";
 
 subtest
 {
-  ok (0.0012V).Str(3) ~~ "0.0000012kiloV", "kiloVolt";
-  ok (0.0012V).Str(2) ~~ "0.000012hectoV", "hectoVolt";
-  ok (0.0012V).Str(1) ~~ "0.00012decaV", "decaVolt";
-  ok (0.0012V).Str(0) ~~ "0.0012V", "Volt";
-  ok (0.0012V).Str(-1) ~~ "0.012deciV", "deciVolt";
-  ok (0.0012V).Str(-2) ~~ "0.12centiV", "centiVolt";
-  ok (0.0012V).Str(-3) ~~ "1.2milliV", "milliVolt";
+  ok (0.0012V).Str(3) ~~ "0.0000012 kilovolt", "kiloVolt";
+  ok (0.0012V).Str(2) ~~ "0.000012 hectovolt", "hectoVolt";
+  ok (0.0012V).Str(1) ~~ "0.00012 decavolt", "decaVolt";
+  ok (0.0012V).Str(0) ~~ "0.0012 volt", "Volt";
+  ok (0.0012V).Str(-1) ~~ "0.012 decivolt", "deciVolt";
+  ok (0.0012V).Str(-2) ~~ "0.12 centivolt", "centiVolt";
+  ok (0.0012V).Str(-3) ~~ "1.2 millivolt", "milliVolt";
 }, "n>1 pretty-notation, 0 < x < 1";
 
 subtest
 {
-  ok (-0.0012V).Str(3) ~~ "-0.0000012kiloV", "kiloVolt";
-  ok (-0.0012V).Str(0) ~~ "-0.0012V", "Volt";
-  ok (-0.0012V).Str(-3) ~~ "-1.2milliV", "milliVolt";
+  ok (-0.0012V).Str(3) ~~ "-0.0000012 kilovolt", "kiloVolt";
+  ok (-0.0012V).Str(0) ~~ "-0.0012 volt", "Volt";
+  ok (-0.0012V).Str(-3) ~~ "-1.2 millivolt", "milliVolt";
 }, "n>1 pretty-notation,  x < 0";
+
+subtest
+{
+  ok (1200000V).Str(6) ~~ "1.2 megavolt";
+  ok (1200000V).Str(4) ~~ "1200 kilovolt";
+  ok (1200000V).Str(3) ~~ "1200 kilovolt";
+  ok (120000V).Str(6)  ~~ "0.12 megavolt", "megaVolt";
+  ok (12000V).Str(5)   ~~ "12 kilovolt", "kiloVolt";
+  ok (1200V).Str(4)    ~~ "1.2 kilovolt", "kiloVolt";
+  ok (120V).Str(3)     ~~ "0.12 kilovolt", "kiloVolt";
+}, "mega, giga, etc";
+
+subtest
+{
+  my $mole = 12mol;
+  my $candela = 100cd;
+  my $something = $mole / $candela;
+
+  ok $something.gist ~~ "12e-2(mol/cd)";
+  ok $something.Str ~~ "0.12 mol/cd";
+}, "something";
+
+subtest
+{
+  my $m = 10000g;
+  say $m.gist;
+  say $m.Str(0);
+  say $m.Str(1);
+  say $m.Str(2);
+  say $m.Str(3);
+  say $m.Str(4);
+}
 
 done-testing;

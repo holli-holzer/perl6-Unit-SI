@@ -11,8 +11,13 @@ sub postfix:<m> ($value) returns Unit::SI is looser(&prefix:<->) is export
 };
 #
 #[ <kilogram kg>, [  0,  0,  1,  0,  0,  0,  0,  0] ],
+sub postfix:<g> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
+  return normalize-value($value, %UNITS<gram><signature>.clone );
+  #return $value does( Unit::SI[ %UNITS<kilogram><signature> ] );
+};
+
 sub postfix:<kg> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
-  return normalize-value($value, %UNITS<kilogram><signature>.clone );
+  return normalize-value($value * 1000, %UNITS<gram><signature>.clone );
   #return $value does( Unit::SI[ %UNITS<kilogram><signature> ] );
 };
 
@@ -77,7 +82,7 @@ sub postfix:<C> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
 
 # # no unit, just a number
 sub postfix:<n> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
-  return normalize-value($value, %UNITS<number><signature>.clone );
+  return normalize-value($value, %UNITS<n><signature>.clone );
 };
 
 # [ <ampere A>,    [  0,  0,  0,  0,  1,  0,  0,  0] ],
@@ -152,12 +157,12 @@ sub postfix:<V> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
 # # # #[ <degree-celsius	°C	temperature relative to 273.15 K		K
 
 sub postfix:<㎧> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
-  return normalize-value($value, %UNITS<speed><signature>.clone );
+  return normalize-value($value, %UNITS<meter/second><signature>.clone );
   #return $value does( Unit::SI[ %UNITS<speed><signature> ] );
 };
 
 sub postfix:<㎨> ($value) returns Unit::SI is looser(&prefix:<->) is export  {
-  return normalize-value($value, %UNITS<velocity><signature>.clone );
+  return normalize-value($value, %UNITS<meter/second²><signature>.clone );
   #return $value does( Unit::SI[ %UNITS<velocity><signature> ] );
 };
 
@@ -165,7 +170,7 @@ sub normalize-value( $value, $signature )
 {
   my $v = $value;
   my $e = $signature[0];
-  my $i = 0;
+  my $i;
 
   while ($v.Int != $v) && $i++ < 20 {
     $v *= 10; $e--;
